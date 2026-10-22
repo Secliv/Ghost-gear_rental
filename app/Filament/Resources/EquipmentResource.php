@@ -8,7 +8,6 @@ use App\Filament\Resources\EquipmentResource\RelationManagers\UnitsRelationManag
 use App\Models\Equipment;
 use Filament\Forms;
 use Filament\Forms\Form;
-use Filament\Forms\Get;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
@@ -55,41 +54,14 @@ class EquipmentResource extends Resource
                     ])
                     ->columns(2),
 
-                Forms\Components\Section::make('Spesifikasi Teknis Khusus')
-                    ->description('Field spesifikasi akan menyesuaikan dengan jenis perangkat yang dipilih.')
+                Forms\Components\Section::make('Spesifikasi Teknis')
+                    ->description('Rincian spesifikasi teknis peralatan.')
                     ->schema([
-                        Forms\Components\TextInput::make('emf_range')
-                            ->label('Rentang EMF')
-                            ->placeholder('Contoh: 50-60 Hz (1.5 - 20 mG)')
-                            ->visible(fn (Get $get): bool => $get('device_type') === DeviceType::EmfMeter->value),
-
-                        Forms\Components\TextInput::make('thermal_temp_range_c')
-                            ->label('Rentang Suhu Termal (°C)')
-                            ->placeholder('Contoh: -20°C sampai 250°C')
-                            ->visible(fn (Get $get): bool => $get('device_type') === DeviceType::ThermalCamera->value),
-
-                        Forms\Components\TextInput::make('night_vision_resolution')
-                            ->label('Resolusi Night Vision')
-                            ->placeholder('Contoh: 1080p 60fps Full Spectrum')
-                            ->visible(fn (Get $get): bool => $get('device_type') === DeviceType::NightVisionCamera->value),
-
-                        Forms\Components\TextInput::make('audio_record_hours')
-                            ->label('Kapasitas Rekam Audio (Jam)')
-                            ->numeric()
-                            ->step(0.1)
-                            ->visible(fn (Get $get): bool => $get('device_type') === DeviceType::EvpRecorder->value),
-
-                        Forms\Components\TextInput::make('motion_sensor_type')
-                            ->label('Tipe Sensor Gerak')
-                            ->placeholder('Contoh: PIR Inframerah Pasif & Getaran 3-Axis')
-                            ->visible(fn (Get $get): bool => $get('device_type') === DeviceType::MotionSensor->value),
-
-                        Forms\Components\TextInput::make('battery_hours')
-                            ->label('Daya Tahan Baterai (Jam)')
-                            ->numeric()
-                            ->step(0.1),
-                    ])
-                    ->columns(2),
+                        Forms\Components\Textarea::make('deskripsi')
+                            ->label('Deskripsi / Spesifikasi Teknis (JSON atau Text)')
+                            ->rows(6)
+                            ->columnSpanFull(),
+                    ]),
             ]);
     }
 

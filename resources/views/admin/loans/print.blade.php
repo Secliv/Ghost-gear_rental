@@ -3,285 +3,198 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Riwayat Peminjaman Peralatan - GhostGear Rental</title>
+    <title>Preview Cetak Riwayat Peminjaman - GhostGear Rental</title>
+    <link rel="icon" type="image/png" href="{{ asset('images/logo-icon.png') }}">
+    <link rel="shortcut icon" href="{{ asset('images/logo-icon.png') }}">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+    @vite(['resources/css/app.css', 'resources/js/app.js'])
+
     <style>
         * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+            color-adjust: exact !important;
         }
-        body {
-            background-color: #f8fafc;
-            color: #0f172a;
-            padding: 24px;
-        }
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            background: #ffffff;
-            padding: 32px;
-            border-radius: 8px;
-            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
-        }
-        .header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            border-bottom: 2px solid #0f172a;
-            padding-bottom: 20px;
-            margin-bottom: 24px;
-        }
-        .brand h1 {
-            font-size: 24px;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            color: #0f172a;
-        }
-        .brand p {
-            color: #64748b;
-            font-size: 13px;
-            margin-top: 4px;
-        }
-        .meta {
-            text-align: right;
-            font-size: 12px;
-            color: #475569;
-        }
-        .action-bar {
-            display: flex;
-            justify-content: flex-end;
-            gap: 12px;
-            margin-bottom: 20px;
-        }
-        .btn {
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            padding: 8px 16px;
-            font-size: 14px;
-            font-weight: 500;
-            border-radius: 6px;
-            cursor: pointer;
-            text-decoration: none;
-            border: 1px solid transparent;
-            transition: all 0.15s ease-in-out;
-        }
-        .btn-primary {
-            background-color: #0284c7;
-            color: #ffffff;
-        }
-        .btn-primary:hover {
-            background-color: #0369a1;
-        }
-        .btn-secondary {
-            background-color: #e2e8f0;
-            color: #334155;
-        }
-        .btn-secondary:hover {
-            background-color: #cbd5e1;
-        }
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            font-size: 12px;
-            margin-bottom: 24px;
-        }
-        th, td {
-            padding: 10px 12px;
-            text-align: left;
-            border-bottom: 1px solid #e2e8f0;
-        }
-        th {
-            background-color: #f1f5f9;
-            color: #1e293b;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            font-size: 11px;
-        }
-        tr:hover td {
-            background-color: #f8fafc;
-        }
-        .text-right {
-            text-align: right;
-        }
-        .text-center {
-            text-align: center;
-        }
-        .badge {
-            display: inline-block;
-            padding: 2px 8px;
-            font-size: 11px;
-            font-weight: 600;
-            border-radius: 9999px;
-        }
-        .badge-danger {
-            background-color: #fee2e2;
-            color: #991b1b;
-        }
-        .badge-success {
-            background-color: #dcfce7;
-            color: #166534;
-        }
-        .footer-summary {
-            display: flex;
-            justify-content: space-between;
-            margin-top: 24px;
-            padding-top: 16px;
-            border-top: 1px solid #cbd5e1;
-            font-size: 13px;
-        }
-        .signatures {
-            display: flex;
-            justify-content: space-between;
-            margin-top: 48px;
-            padding: 0 40px;
-        }
-        .sig-box {
-            text-align: center;
-            width: 200px;
-        }
-        .sig-space {
-            height: 60px;
-        }
-        .sig-name {
-            font-weight: 600;
-            border-top: 1px solid #94a3b8;
-            padding-top: 4px;
-        }
-
         @media print {
-            body {
-                background: #ffffff !important;
-                padding: 0 !important;
-            }
-            .container {
-                box-shadow: none !important;
-                padding: 0 !important;
-                max-width: 100% !important;
-            }
             .no-print {
                 display: none !important;
             }
+            html, body {
+                background-color: #0B0F14 !important;
+                color: #EBF2F8 !important;
+                padding: 0 !important;
+                margin: 0 !important;
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+            }
+            .print-card {
+                background-color: #111720 !important;
+                border: 1px solid #1E2B38 !important;
+                color: #EBF2F8 !important;
+                box-shadow: none !important;
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+            }
+            .print-text-white {
+                color: #ffffff !important;
+            }
+            .print-text-slate {
+                color: #94a3b8 !important;
+            }
+            .print-box {
+                background-color: #141C26 !important;
+                border: 1px solid #1E2B38 !important;
+                color: #EBF2F8 !important;
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+            }
             table {
-                font-size: 10pt;
+                background-color: #111720 !important;
+                color: #EBF2F8 !important;
             }
-            th, td {
-                padding: 6px 8px;
-            }
-            @page {
-                size: landscape;
-                margin: 1.5cm;
+            tr {
+                border-color: #182330 !important;
             }
         }
     </style>
 </head>
-<body>
-    <div class="container">
-        <div class="action-bar no-print">
-            <a href="/admin/loans" class="btn btn-secondary">&larr; Kembali ke Panel Admin</a>
-            <button onclick="window.print()" class="btn btn-primary">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <polyline points="6 9 6 2 18 2 18 9"></polyline>
-                    <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>
-                    <rect x="6" y="14" width="12" height="8"></rect>
-                </svg>
-                Cetak Dokumen
+<body class="bg-[#0B0F14] text-[#EBF2F8] antialiased min-h-screen py-10 px-4 sm:px-8">
+
+    <!-- Action Bar (Hidden when printing) -->
+    <div class="max-w-5xl mx-auto mb-6 flex items-center justify-between no-print">
+        <a href="{{ route('admin.history') }}" class="inline-flex items-center gap-2 text-xs font-semibold text-slate-400 hover:text-white transition">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
+            Kembali ke Riwayat
+        </a>
+
+        <div class="flex items-center gap-3">
+            <button onclick="window.print()" class="px-5 py-2.5 rounded-xl font-bold text-xs bg-[#00FF66] text-black hover:bg-[#00E65C] transition flex items-center gap-2 shadow-[0_2px_12px_rgba(0,255,102,0.25)] cursor-pointer">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4H9v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
+                <span>Cetak / Simpan PDF</span>
             </button>
         </div>
-
-        <div class="header">
-            <div class="brand">
-                <h1>GhostGear Rental</h1>
-                <p>Pusat Penyewaan Peralatan Investigasi Paranormal Terakreditasi</p>
-            </div>
-            <div class="meta">
-                <p><strong>Laporan Resmi Riwayat Peminjaman</strong></p>
-                <p>Dicetak pada: {{ $printedAt->format('d/m/Y H:i:s') }} WIB</p>
-                <p>Oleh Admin: {{ auth()->user()->profile?->full_name ?? auth()->user()->username }}</p>
-            </div>
-        </div>
-
-        <table>
-            <thead>
-                <tr>
-                    <th class="text-center" style="width: 40px;">No</th>
-                    <th>Anggota</th>
-                    <th>Kode Unit</th>
-                    <th>Nama Alat</th>
-                    <th>Tanggal Pinjam</th>
-                    <th>Tenggat</th>
-                    <th>Tanggal Kembali</th>
-                    <th class="text-center">Hari Telat</th>
-                    <th class="text-right">Denda</th>
-                </tr>
-            </thead>
-            <tbody>
-                @forelse ($loans as $index => $loan)
-                    <tr>
-                        <td class="text-center">{{ $index + 1 }}</td>
-                        <td>
-                            <strong>{{ $loan->member?->profile?->full_name ?? $loan->member?->username }}</strong>
-                            <div style="font-size: 11px; color: #64748b;">&#64;{{ $loan->member?->username }}</div>
-                        </td>
-                        <td><code>{{ $loan->unit?->unit_code ?? '-' }}</code></td>
-                        <td>{{ $loan->unit?->equipment?->name ?? '-' }}</td>
-                        <td>{{ $loan->borrow_date ? $loan->borrow_date->format('d M Y') : '-' }}</td>
-                        <td>{{ $loan->due_date ? $loan->due_date->format('d M Y') : '-' }}</td>
-                        <td>{{ $loan->return_date ? $loan->return_date->format('d M Y') : '-' }}</td>
-                        <td class="text-center">
-                            @if ($loan->late_days > 0)
-                                <span class="badge badge-danger">{{ $loan->late_days }} hari</span>
-                            @else
-                                <span style="color: #64748b;">0</span>
-                            @endif
-                        </td>
-                        <td class="text-right">
-                            @if ($loan->fine_amount > 0)
-                                <strong style="color: #b91c1c;">Rp {{ number_format($loan->fine_amount, 0, ',', '.') }}</strong>
-                                <div style="font-size: 10px; color: {{ $loan->fine_paid ? '#15803d' : '#b91c1c' }};">
-                                    ({{ $loan->fine_paid ? 'Lunas' : 'Belum Lunas' }})
-                                </div>
-                            @else
-                                <span style="color: #64748b;">Rp 0</span>
-                            @endif
-                        </td>
-                    </tr>
-                @empty
-                    <tr>
-                        <td colspan="9" class="text-center" style="padding: 32px; color: #64748b;">
-                            Belum ada riwayat peminjaman yang tercatat.
-                        </td>
-                    </tr>
-                @endforelse
-            </tbody>
-        </table>
-
-        <div class="footer-summary">
-            <div>
-                <strong>Total Transaksi:</strong> {{ $loans->count() }} peminjaman
-            </div>
-            <div>
-                <strong>Total Denda Terakumulasi:</strong>
-                Rp {{ number_format($loans->sum('fine_amount'), 0, ',', '.') }}
-            </div>
-        </div>
-
-        <div class="signatures">
-            <div class="sig-box">
-                <p>Mengetahui,</p>
-                <p>Kepala Logistik Paranormal</p>
-                <div class="sig-space"></div>
-                <div class="sig-name">GhostGear HQ</div>
-            </div>
-            <div class="sig-box">
-                <p>Petugas Validasi,</p>
-                <p>Administrator Bertugas</p>
-                <div class="sig-space"></div>
-                <div class="sig-name">{{ auth()->user()->profile?->full_name ?? auth()->user()->username }}</div>
-            </div>
-        </div>
     </div>
+
+    <!-- Printable Preview Card matching Preview Cetak Riwayat Peminjaman.png -->
+    <div class="max-w-5xl mx-auto bg-[#111720] border border-[#1E2B38] rounded-3xl p-8 sm:p-12 shadow-2xl space-y-10 print-card">
+
+        <!-- Top Header -->
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-6 pb-8 border-b border-[#1A2533]">
+            <img src="{{ asset('images/logo.png') }}" alt="GhostGear Rental" class="h-10 sm:h-12 w-auto object-contain">
+
+            <div class="text-left sm:text-right">
+                <h1 class="text-2xl font-extrabold text-white print-text-white tracking-tight">Riwayat Peminjaman</h1>
+                <p class="text-xs text-slate-400 print-text-slate mt-1 font-medium">Periode {{ now()->translatedFormat('F Y') }}</p>
+            </div>
+        </div>
+
+        @php
+            $completedLoans = $loans->filter(fn($l) => $l->status === \App\Enums\LoanStatus::Dikembalikan);
+            $uniqueMembers = $completedLoans->pluck('member_id')->unique()->count();
+            $totalRentalPaid = $completedLoans->where('fine_paid', true)->sum(fn($l) => (float) $l->rental_fee);
+            $totalFinePaid = $completedLoans->where('fine_paid', true)->sum('fine_amount');
+            $totalFineUnpaid = $completedLoans->where('fine_paid', false)->sum('fine_amount');
+            $totalConfirmed = $totalRentalPaid + $totalFinePaid;
+        @endphp
+
+        <!-- History Table -->
+        <div class="border border-[#1A2533] rounded-2xl overflow-hidden print-box">
+            <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse text-xs">
+                    <thead>
+                        <tr class="border-b border-[#1A2533] text-[11px] font-semibold text-slate-400 uppercase tracking-wider bg-[#131A24]/40 print-box">
+                            <th class="py-3.5 px-6">Nama Anggota</th>
+                            <th class="py-3.5 px-6">Jenis Alat</th>
+                            <th class="py-3.5 px-6">Tgl Pinjam</th>
+                            <th class="py-3.5 px-6">Tgl Kembali</th>
+                            <th class="py-3.5 px-6">Denda</th>
+                            <th class="py-3.5 px-6">Status Lunas</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-[#182330]">
+                        @forelse ($completedLoans as $loan)
+                            @php
+                                $member = $loan->member;
+                                $unit = $loan->unit;
+                                $equipment = $unit?->equipment;
+                                $isPaid = $loan->fine_amount == 0 || $loan->fine_paid;
+                            @endphp
+                            <tr class="hover:bg-[#141B24] transition">
+                                <td class="py-4 px-6 font-semibold text-white print-text-white">
+                                    {{ $member?->profile?->full_name ?? $member?->username }}
+                                </td>
+                                <td class="py-4 px-6 text-slate-300 print-text-slate">
+                                    {{ $equipment?->name ?? 'Peralatan' }}
+                                </td>
+                                <td class="py-4 px-6 text-slate-300 print-text-slate">
+                                    {{ $loan->borrow_date ? \Carbon\Carbon::parse($loan->borrow_date)->translatedFormat('d M Y') : '-' }}
+                                </td>
+                                <td class="py-4 px-6 text-slate-300 print-text-slate">
+                                    {{ $loan->return_date ? \Carbon\Carbon::parse($loan->return_date)->translatedFormat('d M Y') : '-' }}
+                                </td>
+                                <td class="py-4 px-6 font-medium text-slate-300 print-text-slate">
+                                    Rp{{ number_format($loan->fine_amount, 0, ',', '.') }}
+                                </td>
+                                <td class="py-4 px-6">
+                                    <span class="text-xs font-semibold {{ $isPaid ? 'text-emerald-400' : 'text-rose-400' }}">
+                                        {{ $isPaid ? 'Lunas' : 'Belum lunas' }}
+                                    </span>
+                                </td>
+                            </tr>
+                        @empty
+                            <tr>
+                                <td colspan="6" class="py-8 text-center text-slate-500">
+                                    Belum ada data riwayat peminjaman yang selesai.
+                                </td>
+                            </tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Ringkasan Penerimaan -->
+        <div class="space-y-4 pt-4">
+            <h2 class="text-base font-bold text-white print-text-white">Ringkasan Penerimaan</h2>
+
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-6">
+                <!-- Card 1 -->
+                <div class="bg-[#141C26] border border-[#1E2B38] rounded-2xl p-6 print-box">
+                    <p class="text-[11px] text-slate-400 font-medium">Jumlah anggota peminjam unik</p>
+                    <div class="text-3xl font-black text-white print-text-white mt-2">{{ $uniqueMembers }}</div>
+                </div>
+
+                <!-- Card 2 -->
+                <div class="bg-[#141C26] border border-[#1E2B38] rounded-2xl p-6 print-box">
+                    <p class="text-[11px] text-slate-400 font-medium">Pendapatan sewa (transaksi lunas)</p>
+                    <div class="text-2xl font-black text-white print-text-white mt-2">
+                        Rp{{ number_format($totalRentalPaid, 0, ',', '.') }}
+                    </div>
+                </div>
+
+                <!-- Card 3 -->
+                <div class="bg-[#141C26] border border-[#1E2B38] rounded-2xl p-6 print-box">
+                    <p class="text-[11px] text-slate-400 font-medium">Denda diterima</p>
+                    <div class="text-2xl font-black text-white print-text-white mt-2">
+                        Rp{{ number_format($totalFinePaid, 0, ',', '.') }}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Notes List -->
+            <div class="pt-4 space-y-1 text-xs text-slate-400 print-text-slate leading-relaxed">
+                <p>Total penerimaan terkonfirmasi: <strong class="text-white print-text-white">Rp{{ number_format($totalConfirmed, 0, ',', '.') }}</strong></p>
+                <p>Denda belum lunas: <strong class="text-rose-400">Rp{{ number_format($totalFineUnpaid, 0, ',', '.') }}</strong></p>
+                <p class="text-[11px] text-slate-500 pt-1">Pendapatan dihitung dari transaksi berstatus Lunas.</p>
+                <p class="text-[11px] text-slate-500">Tgl Kembali adalah tanggal pengembalian aktual yang tercatat dalam arsip.</p>
+            </div>
+        </div>
+
+    </div>
+
 </body>
 </html>

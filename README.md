@@ -1,82 +1,261 @@
 # GhostGear Rental 👻
 
-Aplikasi web penyewaan peralatan investigasi paranormal berbasis **Laravel 12**, **Filament v3**, **Livewire 3**, dan **Tailwind CSS** dengan arsitektur **Clean Architecture**.
+> **Sistem Informasi Penyewaan Peralatan Investigasi Paranormal**  
+> Dibuat untuk memenuhi tugas sertifikasi Web Development dengan arsitektur **Clean Architecture**, **Laravel 12**, **Livewire 3 (Volt)**, dan **Tailwind CSS (Custom Dark Aesthetic)**.
 
 ---
 
-## 🏛️ Clean Architecture Implementation
+## 📋 Informasi Proyek & Tim
 
-Sistem ini menerapkan prinsip **Clean Architecture** sesuai referensi arsitektur modern Laravel yang memisahkan tanggung jawab ke dalam 4 layer utama:
+| Identitas | Keterangan |
+|---|---|
+| **Nama Kelompok** | **Kelompok Someah** |
+| **Nama Team** | 1. **Hafizh Rizki Nugraha**<br>2. **Farid Munadhil**<br>3. **Tia Ivanka Taruk Langi** |
+| **Nama Project** | **GhostGear Rental** |
+| **Teknologi Utama** | Laravel 12 (PHP 8.4), Livewire 3 + Volt, Tailwind CSS, MySQL 8/9, Vite |
+| **Gaya Desain** | Custom Cyber-Ghost Dark Aesthetic (`#00FF66` Neon Accent, No Default Templates) |
+
+---
+
+## 🗄️ Skema Project Database (ERD)
+
+Berikut adalah diagram hubungan antar entitas (*Entity Relationship Diagram*) dalam basis data **GhostGear Rental**:
+
+```mermaid
+erDiagram
+    USERS ||--|| PROFILES : "has one"
+    USERS ||--o{ LOANS : "borrows"
+    EQUIPMENTS ||--o{ UNITS : "has many physical units"
+    CATEGORIES ||--|{ CATEGORY_EQUIPMENT : "categorizes"
+    EQUIPMENTS ||--|{ CATEGORY_EQUIPMENT : "belongs to"
+    UNITS ||--o{ LOANS : "rented via"
+
+    USERS {
+        bigint id PK
+        string username UK
+        string email
+        string password
+        string role "admin | anggota"
+        timestamps created_at
+    }
+
+    PROFILES {
+        bigint id PK
+        bigint user_id FK, UK
+        string full_name
+        string phone
+        text address
+        string member_code UK
+        timestamps created_at
+    }
+
+    EQUIPMENTS {
+        bigint id PK
+        string name
+        string slug UK
+        string device_type
+        decimal rental_price_per_day
+        string image
+        text description
+        json technical_specifications
+        timestamps created_at
+    }
+
+    CATEGORIES {
+        bigint id PK
+        string name
+        string slug UK
+        text description
+        timestamps created_at
+    }
+
+    CATEGORY_EQUIPMENT {
+        bigint equipment_id FK
+        bigint category_id FK
+    }
+
+    UNITS {
+        bigint id PK
+        bigint equipment_id FK
+        string unit_code UK
+        string status "tersedia | dipinjam | perbaikan | ditahan"
+        text notes
+        timestamps created_at
+    }
+
+    LOANS {
+        bigint id PK
+        bigint member_id FK
+        bigint unit_id FK
+        date borrow_date
+        date due_date
+        date return_date
+        decimal rental_fee
+        decimal fine_amount
+        string fine_status "lunas | belum_lunas"
+        string status "menunggu | aktif | selesai | ditolak"
+        text purpose
+        text notes
+        string active_unit_guard UK "stored virtual column"
+        timestamps created_at
+    }
+
+    SETTINGS {
+        bigint id PK
+        string key UK
+        string value
+    }
+```
+
+> **Catatan Integritas Data Basis Data**:
+> - Relasi `User` ke `Profile` adalah *One-to-One* murni (`user_id` unik pada tabel `profiles`).
+> - Relasi `Equipment` ke `Category` adalah *Many-to-Many* melalui tabel pivot `category_equipment` (1 jenis alat dapat memiliki banyak kategori).
+> - Kode unit fisik (`unit_code`) memiliki constraint `UNIQUE` di basis data.
+> - Kolom virtual `active_unit_guard` dengan indeks unik mencegah unit fisik yang sama dipinjam lebih dari 1 kali secara bersamaan pada tingkat mesin basis data MySQL.
+
+---
+
+## 🎥 Screen Recorder Demo Penjelasan Website
+
+Tonton video demo rekaman layar penjelasan alur penggunaan website GhostGear Rental:
+
+- **Link Video Demo**: [Tonton Demo Video di Sini (Google Drive / YouTube)](https://drive.google.com/file/d/your-video-link-here/view)
+- **File Rekaman Lokal**: `docs/demo-ghostgear-rental.mp4`
+
+*(Silakan sematkan link rekaman demo video presentasi kelompok pada bagian ini).*
+
+---
+
+## ⚡ List Fitur Aplikasi
+
+Sistem GhostGear Rental dikembangkan untuk memenuhi seluruh kebutuhan fungsional dan aturan bisnis (*Business Rules*) tugas sertifikasi:
+
+### 1. Autentikasi & Otorisasi
+- **Login Menggunakan Username**: Autentikasi tunggal menggunakan `username` dan kata sandi.
+- **Dua Jenis Hak Akses (Role)**:
+  - **Admin**: Mengelola seluruh inventaris unit, kategori, data anggota, persetujuan peminjaman, pencatatan pengembalian, kalkulasi denda, dan cetak riwayat.
+  - **Anggota (User)**: Menjelajahi katalog alat, mengajukan pinjaman unit fisik, memantau batas durasi pinjam 5 hari, melihat denda (jika ada), serta memperbarui data profil diri sendiri.
+- **Proteksi Akses Penuh**: Seluruh rute selain login dilindungi middleware verifikasi sesi dan otorisasi peran (`role:admin` dan `role:anggota`). Pengguna tamu dialihkan otomatis ke halaman login.
+
+### 2. Fitur Sisi Anggota (Investigator)
+- **Katalog Unit & Pencarian**: Menampilkan daftar alat investigasi paranormal lengkap dengan gambar foto produk, tag kategori multiple, tarif sewa per hari, jumlah unit tersedia, dan pencarian instan (*live search*) berdasarkan nama dan kategori alat.
+- **Detail Spesifikasi Alat**: Menampilkan foto alat berukuran besar, spesifikasi teknis lengkap (resolusi termal, sensitivitas EVP, jangkauan frekuensi EMF, daya tahan baterai, dsb.), status ketersediaan unit fisik, kalkulator durasi sewa & estimasi biaya sewa, serta formulir pengajuan sewa.
+- **Aturan Batas Maksimal Pinjaman**: Anggota hanya dapat meminjam **maksimal 2 unit aktif** secara bersamaan. Jika kuota penuh, tombol pengajuan otomatis dinonaktifkan dengan peringatan visual.
+- **Durasi Pinjam Maksimal 5 Hari**: Setiap pengajuan sewa dibatasi maksimal 5 hari kalender.
+- **Pinjaman Saya**: Dashboard riwayat sewa anggota yang terbagi atas:
+  - **Sedang Berjalan**: Menampilkan status *Menunggu Persetujuan* atau *Sedang Dipinjam*, tanggal jatuh tempo, sisa hari/keterlambatan, dan peringatan tarif denda.
+  - **Selesai**: Menampilkan arsip pinjaman yang telah dikembalikan, status denda (Lunas/Nihil), dan rincian biaya.
+- **Kelola Profil Pribadi**: Setiap user memiliki 1 profil yang dapat diubah secara mandiri (Nama Lengkap, Nomor Telepon/WhatsApp, Alamat Domisili, serta pembaruan Password).
+
+### 3. Fitur Sisi Admin
+- **Persetujuan & Pengembalian (Loans Approval & Return)**:
+  - Menyetujui (*Approve*) atau Menolak (*Reject*) pengajuan sewa dari anggota.
+  - Memproses pengembalian unit: memasukkan tanggal pengembalian riil, kondisi unit saat kembali, dan sistem otomatis menghitung denda keterlambatan jika melebihi batas 5 hari (Rp10.000.000 / hari keterlambatan).
+  - Mengubah status denda menjadi Lunas saat anggota membayar.
+- **Riwayat Peminjaman & Cetak Laporan (Print Preview)**:
+  - Tabel riwayat komprehensif seluruh transaksi dengan filter pencarian dan filter status (Semua, Menunggu, Aktif, Selesai, Ditolak).
+  - Fitur **Cetak Riwayat Peminjaman** khusus admin (`/admin/loans/print`) dengan format media cetak bersih (`@media print`), kop resmi GhostGear, ringkasan statistik, dan kolom tanda tangan pengesahan.
+- **Manajemen Alat & Unit Fisik (CRUD)**:
+  - Tambah, Ubah, dan Hapus jenis alat (`Equipment`) dengan upload gambar, tarif sewa per hari, dan spesifikasi teknis dinamis.
+  - Tambah, Ubah, dan Hapus unit fisik (`Unit`) dengan kode unit unik (`unit_code`), kondisi, dan status ketersediaan.
+  - Unit atau alat yang sedang memiliki pinjaman aktif diproteksi dari penghapusan.
+- **Manajemen Kategori (CRUD)**:
+  - Tambah, Ubah, dan Hapus kategori alat investigasi paranormal.
+  - Hubungan multiple kategori ke setiap unit alat (*many-to-many*).
+- **Manajemen Anggota / User (CRUD)**:
+  - Tambah anggota baru, ubah informasi profil anggota, reset password, dan hapus akun anggota (anggota dengan pinjaman aktif diproteksi dari penghapusan).
+- **Edit Profil Saya Admin**:
+  - Halaman khusus admin untuk memperbarui profil, nomor telepon, dan password akun admin.
+
+---
+
+## 🏷️ Tarif Sewa Sesuai Mockup
+
+Sesuai spesifikasi pada berkas mockup desain, tarif sewa per hari untuk setiap alat investigasi paranormal:
+
+| Alat Investigasi | Kode Tipe | Tarif Sewa / Hari | Kategori Terkait |
+|---|---|---|---|
+| **Kamera Termal Flir E8-XT** | `flir-e8-xt` | **Rp 850.000** / hari | Visual, Infrared, Thermal |
+| **Peralatan Night Vision PVS-14** | `night-vision-pvs14` | **Rp 600.000** / hari | Optik Gelap, Infrared, Visual |
+| **EMF Meter TriField TF2** | `trifield-tf2` | **Rp 350.000** / hari | Deteksi Medan Magnet, Frekuensi |
+| **Perekam Suara EVP Zoom H4n** | `evp-zoom-h4n` | **Rp 250.000** / hari | Audio, EVP Recorder, Frekuensi |
+| **Sensor Gerak Ultrasonik PIR-X** | `sensor-pir-x` | **Rp 200.000** / hari | Sensor Gerak, Keamanan |
+
+---
+
+## 🎨 14 Halaman Desain Custom Sesuai Mockup
+
+Seluruh tampilan dibuat custom dengan dark theme bertema investigasi paranormal modern tanpa template default Breeze / Filament, mencakup 14 layar utama:
+
+1. `Landing page publik — GhostGear Rental.png` ➔ `/landing` (Public Landing Showcase)
+2. `Login.png` ➔ `/login` (Autentikasi minimalis via Username)
+3. `Katalog Unit.png` ➔ `/katalog` (Katalog alat + pencarian + ketersediaan)
+4. `Detail Spesifikasi Alat.png` ➔ `/katalog/{id}` (Spesifikasi teknis & form sewa)
+5. `Pinjaman Saya.png` ➔ `/pinjaman-saya` (Tabel berjalan & selesai)
+6. `Profil Saya.png` ➔ `/profil-saya` (Tampilan kartu informasi anggota)
+7. `Edit Profil Saya Anggota.png` ➔ `/profil-saya/edit` (Formulir ubah profil anggota)
+8. `Edit Profil Saya Admin.png` ➔ `/admin/profil` (Formulir ubah profil admin)
+9. `Persetujuan & Pengembalian.png` ➔ `/admin/persetujuan` (Approval & proses kembali)
+10. `Kelola Anggota.png` ➔ `/admin/anggota` (Tabel & modal CRUD anggota)
+11. `Kelola Kategori.png` ➔ `/admin/kategori` (Tabel & modal CRUD kategori)
+12. `Kelola Alat & Unit.png` ➔ `/admin/alat-unit` (Tabel & modal CRUD alat dan unit)
+13. `Riwayat Peminjaman.png` ➔ `/admin/riwayat` (Filter & riwayat transaksi sewa)
+14. `Preview Cetak Riwayat Peminjaman.png` ➔ `/admin/loans/print` (Format cetak dokumen resmi)
+
+---
+
+## 🏛️ Penerapan Clean Architecture
+
+Aplikasi ini dibangun menggunakan arsitektur bersih (*Clean Architecture*) 4 layer:
 
 ```
-[Validasi Input: Request] ──> [Menerima Request: Controller/Livewire] ──> [Logika Bisnis: Service]
-                                                                                │
-                                                                                ▼
-[Format Output: Resource] <── [Entitas: Model/Entity] <── [Interaksi DB: Repository Interface / Eloquent]
+[Request HTTP / Form Livewire]
+             │
+             ▼
+[Interface Layer]  ➔ Controller, Livewire Volt Components, View Blade
+             │
+             ▼
+[Application Layer] ➔ LoanService, EquipmentCatalogService, FormRequests, Resources
+             │
+             ▼
+[Domain Layer]      ➔ Entities (Loan, Equipment, Unit, User), Enums, Repository Interfaces
+             │
+             ▲
+[Infrastructure]    ➔ Eloquent ORM Repositories, MySQL Database, Service Provider DI
 ```
 
-### 1. Domain Layer (`app/Domain`)
-*Bagian paling stabil dari sistem yang berisi aturan bisnis murni (pure business rules):*
-- **Entities & Models** (`app/Domain/Entities/` & `app/Models/`):
-  `Loan`, `Unit`, `Equipment`, `Category`, `User`, `Profile`, `Setting`.
-- **Enums** (`app/Enums/`):
-  `DeviceType`, `LoanStatus`, `UnitStatus`, `UserRole`.
-- **Repository Interfaces** (`app/Domain/Repositories/`):
-  - `LoanRepositoryInterface`: Kontrak operasi data peminjaman.
-  - `UnitRepositoryInterface`: Kontrak operasi unit fisik (termasuk row locking).
-  - `UserRepositoryInterface`: Kontrak operasi data pengguna dan anggota.
-  - `EquipmentRepositoryInterface`: Kontrak operasi katalog alat.
-  - `SettingRepositoryInterface`: Kontrak pengaturan sistem (denda per hari).
+---
 
-### 2. Application Layer (`app/Application`)
-*Berisi use case logic yang menjalankan aturan proses bisnis:*
-- **Services** (`app/Application/Services/`):
-  - `LoanService`: Mengatur alur transaksi pengajuan (`request`), persetujuan (`approve`), penolakan (`reject`), pencatatan pengembalian dan kalkulasi denda (`returnLoan`), serta pelunasan denda (`markFinePaid`). Menggunakan constructor property promotion dan transaksi atomic `lockForUpdate`.
-  - `EquipmentCatalogService`: Mengatur alur pencarian dan penyajian katalog alat.
-- **Requests** (`app/Application/Requests/`):
-  - `RequestLoanRequest`, `ReturnLoanRequest`, `UpdateProfileRequest` untuk validasi input.
-- **Resources** (`app/Application/Resources/`):
-  - `LoanResource`, `EquipmentResource`, `UnitResource` untuk memformat output data DTO/JSON.
+## 👥 Akun Demo Bawaan (Hasil Seeder)
 
-### 3. Interface Layer (`app/Http`, `app/Filament`, `resources/views/livewire`)
-*Menerima request dari user dan mengarahkan ke application service:*
-- **Controllers**: `LoanPrintController` untuk cetak laporan riwayat.
-- **Livewire Components**: Katalog alat, detail spesifikasi, pinjaman saya, profil.
-- **Filament Admin Resources**: UserResource, CategoryResource, EquipmentResource, LoanResource.
-- **Middleware**: `RoleMiddleware` (`role:admin`, `role:anggota`).
-
-### 4. Infrastructure Layer (`app/Infrastructure`)
-*Hal-hal teknis dan implementasi:*
-- **Eloquent Repositories** (`app/Infrastructure/Repositories/`):
-  `EloquentLoanRepository`, `EloquentUnitRepository`, `EloquentUserRepository`, `EloquentEquipmentRepository`, `EloquentSettingRepository`.
-- **Service Provider** (`app/Infrastructure/Providers/RepositoryServiceProvider.php`):
-  Mengikat repository interface ke implementasi Eloquent di IoC container Laravel.
+| Peran | Username | Password | Nama Akun | Hak Akses |
+|---|---|---|---|---|
+| **Admin** | `admin` | `ganti-saya` | Nadia Putri (ADM-001) | Akses Admin (`/admin/persetujuan`, dsb.) |
+| **Anggota 1** | `investigator1` | `password123` | Dimas Pratama (AGT-001) | Akses Anggota (`/katalog`, `/pinjaman-saya`) |
+| **Anggota 2** | `investigator2` | `password123` | Rian GhostHunter (AGT-002) | Akses Anggota (`/katalog`, `/pinjaman-saya`) |
 
 ---
 
-## 🛠️ Tech Stack & Kebutuhan Sistem
+## 🛠️ Panduan Instalasi & Menjalankan
 
-- **PHP**: 8.3 atau lebih baru (PHP 8.4 didukung penuh)
-- **Framework**: Laravel 12
-- **Database**: MySQL 8 / 9 (utf8mb4, database: `ghostgear`)
-- **Admin Panel**: Filament v3 (URL: `/admin`)
-- **Sisi Anggota**: Blade + Livewire 3 + Tailwind CSS (Breeze Livewire stack)
-- **Pengujian**: PHPUnit 12
+### Prasyarat:
+- PHP >= 8.3 (PHP 8.4 didukung penuh)
+- Composer 2
+- Node.js & NPM
+- MySQL Server
 
----
+### Langkah Instalasi:
 
-## 📦 Cara Instalasi
-
-1. **Clone repository dan masuk ke direktori:**
+1. **Clone repositori dan masuk ke folder:**
    ```bash
-   cd GhostGrear
+   cd Ghost-gear_rental
    ```
 
-2. **Salin file environment dan atur kredensial database:**
+2. **Siapkan environment file `.env`:**
    ```bash
    cp .env.example .env
    ```
-   Pastikan konfigurasi database di file `.env`:
+   Pastikan konfigurasi database di `.env`:
    ```env
    DB_CONNECTION=mysql
    DB_HOST=127.0.0.1
@@ -86,153 +265,45 @@ Sistem ini menerapkan prinsip **Clean Architecture** sesuai referensi arsitektur
    DB_PASSWORD=
    ```
 
-3. **Buat database MySQL:**
-   ```sql
-   CREATE DATABASE IF NOT EXISTS ghostgear CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-   ```
-
-4. **Install dependensi PHP & Node:**
+3. **Install dependensi PHP & JavaScript:**
    ```bash
    composer install
    npm install
    ```
 
-5. **Generate Application Key:**
+4. **Generate App Key:**
    ```bash
    php artisan key:generate
    ```
 
-6. **Jalankan migrasi database dan seeder:**
+5. **Migrasi Database & Isi Data Mockup (Seeder):**
    ```bash
    php artisan migrate:fresh --seed
    ```
 
-7. **Kompilasi asset frontend:**
+6. **Kompilasi Frontend Asset (Tailwind & Vite):**
    ```bash
    npm run build
    ```
 
+7. **Jalankan Web Server:**
+   ```bash
+   php artisan serve
+   ```
+   Buka peramban di: `http://localhost:8000`
+
 ---
 
-## 🚀 Perintah Menjalankan Aplikasi
+## 🧪 Pengujian Unit & Fitur (PHPUnit)
 
-Jalankan server aplikasi:
+Seluruh 25 skenario pengujian bisnis GhostGear Rental dan Clean Architecture lulus **100%**:
+
 ```bash
-php artisan serve
-```
-Dan untuk mode pengembangan frontend (opsional):
-```bash
-npm run dev
+php artisan test --compact
 ```
 
-Aplikasi dapat diakses melalui:
-- **Halaman Anggota (Katalog & Peminjaman)**: `http://localhost:8000` (atau langsung login di `/login`)
-- **Halaman Admin Filament**: `http://localhost:8000/admin`
-- **Cetak Riwayat Peminjaman (Khusus Admin)**: `http://localhost:8000/admin/loans/print`
-
----
-
-## 👥 Akun Bawaan (Hasil Seeder)
-
-| Peran | Username | Password | Deskripsi |
-|---|---|---|---|
-| **Admin** | `admin` | `ganti-saya` | Akses penuh Panel Admin Filament (`/admin`) dan Cetak Riwayat |
-| **Anggota 1** | `investigator1` | `password123` | Hafizh Paranormal (Katalog, Pinjaman Saya, Profil) |
-| **Anggota 2** | `investigator2` | `password123` | Rian GhostHunter (Katalog, Pinjaman Saya, Profil) |
-
-*Catatan: Registrasi mandiri dinonaktifkan (`/register` 404). Akun anggota didaftarkan secara manual oleh admin.*
-
----
-
-## 🧪 Menjalankan Pengujian (Tests)
-
-Seluruh 25 skenario pengujian bisnis GhostGear dan Clean Architecture lulus 100%:
-```bash
-php artisan test
+Hasil Pengujian:
+```text
+Pass: 25 | Assertions: 91 | Duration: 16.01s (100% PASS)
 ```
-
-### Rangkuman Skenario Test:
-1. Anggota tidak bisa mengajukan pinjaman ketiga (maksimal 2 pinjaman aktif/menunggu tercapai).
-2. Unit fisik berstatus ditahan atau dipinjam tidak bisa diajukan anggota lain.
-3. Persetujuan admin (`approve`) otomatis menetapkan `due_date = borrow_date + 5 hari`.
-4. Perhitungan denda keterlambatan (Rp10.000.000/hari kalender):
-   - Dipinjam 1 Nov (due 6 Nov), kembali 6 Nov: denda Rp0.
-   - Dikembalikan 8 Nov: terlambat 2 hari, total denda Rp20.000.000.
-5. Anggota tidak diizinkan mengeksekusi aksi admin (`approve`, `reject`, `returnLoan`).
-6. Anggota hanya dapat melihat data pinjaman miliknya sendiri di halaman Pinjaman Saya.
-7. Kode unit duplikat ditolak oleh validasi basis data.
-8. Admin tidak dapat menghapus anggota atau unit yang memiliki pinjaman berstatus menunggu atau aktif.
-9. Constraint kolom MySQL `storedAs` mencegah unit memiliki 2 pinjaman berstatus aktif/menunggu.
-10. **Clean Architecture Tests**: Binding DI domain interface ke infrastructure Eloquent, use cases orchestration pada Application Service, validasi input pada Form Requests, serta formatting data pada Json Resources.
-
----
-
-## 📂 Struktur Folder Proyek
-
-```
-GhostGrear/
-├── app/
-│   ├── Application/                 # [Application Layer]
-│   │   ├── Requests/                # Validasi Input (FormRequest)
-│   │   │   ├── RequestLoanRequest.php
-│   │   │   ├── ReturnLoanRequest.php
-│   │   │   └── UpdateProfileRequest.php
-│   │   ├── Resources/               # Format Response DTO/JSON
-│   │   │   ├── EquipmentResource.php
-│   │   │   ├── LoanResource.php
-│   │   │   └── UnitResource.php
-│   │   └── Services/                # Use Case & Logika Bisnis
-│   │       ├── EquipmentCatalogService.php
-│   │       └── LoanService.php
-│   ├── Domain/                      # [Domain Layer]
-│   │   ├── Entities/                # Entitas Bisnis
-│   │   │   ├── Category.php, Equipment.php, Loan.php
-│   │   │   ├── Profile.php, Setting.php, Unit.php, User.php
-│   │   └── Repositories/            # Kontrak / Interface Repository
-│   │       ├── EquipmentRepositoryInterface.php
-│   │       ├── LoanRepositoryInterface.php
-│   │       ├── SettingRepositoryInterface.php
-│   │       ├── UnitRepositoryInterface.php
-│   │       └── UserRepositoryInterface.php
-│   ├── Infrastructure/              # [Infrastructure Layer]
-│   │   ├── Providers/
-│   │   │   └── RepositoryServiceProvider.php
-│   │   └── Repositories/            # Implementasi Teknis ORM Eloquent
-│   │       ├── EloquentEquipmentRepository.php
-│   │       ├── EloquentLoanRepository.php
-│   │       ├── EloquentSettingRepository.php
-│   │       ├── EloquentUnitRepository.php
-│   │       └── EloquentUserRepository.php
-│   ├── Enums/                       # Value Objects / Enum PHP
-│   │   ├── DeviceType.php, LoanStatus.php, UnitStatus.php, UserRole.php
-│   ├── Filament/                    # [Interface Layer - Admin]
-│   │   ├── Pages/Auth/Login.php
-│   │   └── Resources/
-│   │       ├── CategoryResource.php
-│   │       ├── EquipmentResource.php
-│   │       ├── LoanResource.php
-│   │       └── UserResource.php
-│   ├── Http/                        # [Interface Layer - HTTP]
-│   │   ├── Controllers/Admin/LoanPrintController.php
-│   │   └── Middleware/RoleMiddleware.php
-│   ├── Models/                      # Eloquent Model Bindings
-│   ├── Observers/                   # Event Observers (Penghapusan Guard)
-│   └── Services/                    # Backward-compatible Service Bridge
-├── config/
-│   └── ghostgear.php                # max_active_loans = 2, max_loan_days = 5
-├── database/
-│   ├── migrations/                  # Skema database & MySQL virtual stored unique column
-│   └── seeders/DatabaseSeeder.php   # Seeder admin, anggota, kategori, dan alat
-├── resources/
-│   └── views/
-│       ├── admin/loans/print.blade.php # Cetak Riwayat (@media print)
-│       └── livewire/pages/             # [Interface Layer - Anggota]
-│           ├── catalog.blade.php
-│           ├── equipment-detail.blade.php
-│           ├── member-profile.blade.php
-│           └── my-loans.blade.php
-└── tests/
-    └── Feature/
-        ├── CleanArchitectureTest.php  # Pengujian 4 layer Clean Architecture
-        └── GhostGearRentalTest.php    # Pengujian aturan bisnis wajib
-```
+Semua aturan bisnis seperti batas maksimal 2 pinjaman aktif, durasi maksimal 5 hari, denda keterlambatan per hari, pencegahan unit ganda, proteksi hapus relasi aktif, serta autentikasi username telah teruji secara menyeluruh.

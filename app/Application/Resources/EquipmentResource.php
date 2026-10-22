@@ -23,18 +23,13 @@ class EquipmentResource extends JsonResource
             'name' => $this->name,
             'device_type' => $this->device_type->value,
             'device_type_label' => $this->device_type->label(),
+            'deskripsi' => $this->deskripsi,
             'description' => $this->description,
             'categories' => $this->categories->pluck('name'),
             'total_units' => $this->units_count ?? $this->units->count(),
             'available_units' => $this->available_units_count ?? $this->availableUnits->count(),
-            'specs' => array_filter([
-                'emf_range' => $this->emf_range,
-                'thermal_temp_range_c' => $this->thermal_temp_range_c,
-                'night_vision_resolution' => $this->night_vision_resolution,
-                'audio_record_hours' => $this->audio_record_hours ? (float) $this->audio_record_hours : null,
-                'motion_sensor_type' => $this->motion_sensor_type,
-                'battery_hours' => $this->battery_hours ? (float) $this->battery_hours : null,
-            ]),
+            'specs' => $this->specs_map,
+            'specifications' => $this->specifications,
             'units' => UnitResource::collection($this->whenLoaded('units')),
         ];
     }

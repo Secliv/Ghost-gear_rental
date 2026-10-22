@@ -28,7 +28,10 @@ class EloquentEquipmentRepository implements EquipmentRepositoryInterface
             ->when($search, function ($query, $term) {
                 $query->where(function ($sub) use ($term) {
                     $sub->where('name', 'like', "%{$term}%")
-                        ->orWhere('description', 'like', "%{$term}%");
+                        ->orWhere('description', 'like', "%{$term}%")
+                        ->orWhereHas('categories', function ($catSub) use ($term) {
+                            $catSub->where('name', 'like', "%{$term}%");
+                        });
                 });
             })
             ->when($categoryId, function ($query, $catId) {

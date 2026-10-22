@@ -337,4 +337,56 @@ class GhostGearRentalTest extends TestCase
             'status' => LoanStatus::Menunggu,
         ]);
     }
+
+    /**
+     * Test ekstra: Durasi peminjaman lebih dari 5 hari ditolak dan memicu alert error.
+     */
+    public function test_extra_loan_request_exceeding_five_days_is_rejected(): void
+    {
+        Unit::factory()->create([
+            'equipment_id' => $this->equipment->id,
+            'unit_code' => 'DUR-001',
+            'status' => UnitStatus::Tersedia,
+        ]);
+
+        $this->actingAs($this->member);
+
+        Volt::test('pages.equipment-detail', ['equipment' => $this->equipment])
+            ->set('borrowDate', Carbon::now()->toDateString())
+            ->set('dueDate', Carbon::now()->addDays(7)->toDateString())
+            ->call('requestLoan')
+            ->assertSet('errorMessage', 'Peminjaman maksimal 5 hari!')
+            ->assertDispatched('loan-max-days-exceeded');
+
+        $this->assertDatabaseMissing('loans', [
+            'member_id' => $this->member->id,
+        ]);
+    }
+
+    /**
+     * Test ekstra: Pengajuan peminjaman valid berhasil dan me-redirect ke halaman Pinjaman Saya.
+     */
+    public function test_extra_valid_loan_request_redirects_to_member_loans(): void
+    {
+        $unit = Unit::factory()->create([
+            'equipment_id' => $this->equipment->id,
+            'unit_code' => 'REDIRECT-001',
+            'status' => UnitStatus::Tersedia,
+        ]);
+
+        $this->actingAs($this->member);
+
+        Volt::test('pages.equipment-detail', ['equipment' => $this->equipment])
+            ->set('borrowDate', Carbon::now()->toDateString())
+            ->set('dueDate', Carbon::now()->addDays(3)->toDateString())
+            ->call('requestLoan')
+            ->assertRedirect(route('member.loans'))
+            ->assertSessionHas('success');
+
+        $this->assertDatabaseHas('loans', [
+            'member_id' => $this->member->id,
+            'unit_id' => $unit->id,
+            'status' => LoanStatus::Menunggu,
+        ]);
+    }
 }

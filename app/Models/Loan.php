@@ -31,6 +31,7 @@ class Loan extends Model
         'fine_per_day',
         'fine_amount',
         'fine_paid',
+        'rental_fee',
         'status',
     ];
 
@@ -52,6 +53,7 @@ class Loan extends Model
             'fine_per_day' => 'decimal:2',
             'fine_amount' => 'decimal:2',
             'fine_paid' => 'boolean',
+            'rental_fee' => 'decimal:2',
         ];
     }
 

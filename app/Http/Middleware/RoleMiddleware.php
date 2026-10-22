@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Enums\UserRole;
 use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -22,11 +23,19 @@ class RoleMiddleware
         }
 
         if (! $user->is_active) {
-            abort(403, 'Akun Anda telah dinonaktifkan.');
+            auth()->logout();
+            $request->session()->invalidate();
+            $request->session()->regenerateToken();
+
+            return redirect()->route('login')->withErrors(['username' => 'Akun Anda dinonaktifkan. Silakan hubungi admin.']);
         }
 
         if ($user->role->value !== $role) {
-            abort(403, 'Akses tidak diizinkan untuk peran ini.');
+            if ($user->role === UserRole::Admin) {
+                return redirect()->route('admin.approval');
+            }
+
+            return redirect()->route('catalog');
         }
 
         return $next($request);
