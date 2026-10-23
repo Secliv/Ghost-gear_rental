@@ -6,8 +6,12 @@
         <meta name="csrf-token" content="{{ csrf_token() }}">
 
         <title>{{ config('app.name', 'GhostGear Rental') }}</title>
-        <link rel="icon" type="image/png" href="{{ asset('images/logo-icon.png') }}">
-        <link rel="shortcut icon" href="{{ asset('images/logo-icon.png') }}">
+        <!-- Browser Tab Icon (Favicon) -->
+        <link rel="icon" type="image/png" sizes="32x32" href="{{ asset('favicon-32x32.png') }}?v=20261023c">
+        <link rel="icon" type="image/png" sizes="16x16" href="{{ asset('favicon-16x16.png') }}?v=20261023c">
+        <link rel="icon" type="image/png" href="{{ asset('images/logo-icon.png') }}?v=20261023c">
+        <link rel="shortcut icon" href="{{ asset('favicon.ico') }}?v=20261023c">
+        <link rel="apple-touch-icon" href="{{ asset('images/logo-icon.png') }}?v=20261023c">
 
         <!-- Fonts -->
         <link rel="preconnect" href="https://fonts.googleapis.com">
