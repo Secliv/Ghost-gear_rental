@@ -26,7 +26,6 @@ new #[Layout('layouts.app')] class extends Component
     public string $name = '';
     public string $device_type = 'thermal_camera';
     public array $category_ids = [];
-    public string $categorySearch = '';
     public float $rental_price_per_day = 850000;
     public string $completeness = 'Baterai, charger, hard case';
 
@@ -59,7 +58,6 @@ new #[Layout('layouts.app')] class extends Component
         if (! in_array($id, $this->category_ids)) {
             $this->category_ids[] = $id;
         }
-        $this->categorySearch = '';
     }
 
     public function removeCategory(int $id): void
@@ -67,16 +65,18 @@ new #[Layout('layouts.app')] class extends Component
         $this->category_ids = array_values(array_filter($this->category_ids, fn ($catId) => (int) $catId !== (int) $id));
     }
 
-    public function createAndAddCategory(string $name): void
+    public function createAndAddCategory(string $name): ?array
     {
         $trimmed = trim($name);
-        if ($trimmed === '') return;
+        if ($trimmed === '') return null;
 
         $cat = Category::query()->firstOrCreate(
             ['name' => $trimmed],
             ['description' => 'Kategori peralatan investigasi.']
         );
         $this->addCategory($cat->id);
+
+        return ['id' => $cat->id, 'name' => $cat->name];
     }
 
     public function removePhoto(): void
@@ -242,9 +242,7 @@ new #[Layout('layouts.app')] class extends Component
                 $this->selectedEquipmentId = $equipment->id;
             }
 
-            if (! empty($this->category_ids)) {
-                $equipment->categories()->sync($this->category_ids);
-            }
+            $equipment->categories()->sync($this->category_ids ?? []);
 
             // 2. Update or create Unit
             if ($this->selectedUnitId) {
@@ -306,21 +304,10 @@ new #[Layout('layouts.app')] class extends Component
     public function with(): array
     {
         $allCategories = Category::query()->orderBy('name')->get();
-        $selectedCategories = $allCategories->whereIn('id', $this->category_ids)->values();
-
-        $filteredSuggestions = $allCategories
-            ->reject(fn ($cat) => in_array($cat->id, $this->category_ids))
-            ->when($this->categorySearch !== '', function ($collection) {
-                $term = strtolower(trim($this->categorySearch));
-                return $collection->filter(fn ($cat) => str_contains(strtolower($cat->name), $term));
-            })
-            ->values();
 
         return [
             'unitsList' => Unit::query()->with('equipment.categories')->get(),
             'allCategories' => $allCategories,
-            'selectedCategories' => $selectedCategories,
-            'filteredSuggestions' => $filteredSuggestions,
             'deviceTypes' => DeviceType::cases(),
         ];
     }
@@ -598,8 +585,96 @@ new #[Layout('layouts.app')] class extends Component
 
                     <!-- Kategori & Jenis Perangkat -->
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <!-- Kategori (LinkedIn-style Tag Input with Autocomplete) -->
-                        <div class="space-y-1.5 relative" x-data="{ open: false }">
+                        <!-- Kategori (LinkedIn-style Tag Input with Instant Client-Side Autocomplete) -->
+                        <div
+                            class="space-y-1.5 relative"
+                            x-data="{
+                                open: false,
+                                search: '',
+                                highlightedIndex: -1,
+                                allCategories: {{ Js::from($allCategories->map(fn ($c) => ['id' => (int) $c->id, 'name' => $c->name])->values()) }},
+
+                                get selectedCategories() {
+                                    const ids = (Array.isArray($wire.category_ids) ? $wire.category_ids : []).map(Number);
+                                    return this.allCategories.filter(c => ids.includes(Number(c.id)));
+                                },
+
+                                get suggestions() {
+                                    const ids = (Array.isArray($wire.category_ids) ? $wire.category_ids : []).map(Number);
+                                    const unselected = this.allCategories.filter(c => !ids.includes(Number(c.id)));
+                                    const q = this.search.trim().toLowerCase();
+                                    if (!q) return unselected;
+                                    return unselected.filter(c => c.name.toLowerCase().includes(q));
+                                },
+
+                                async selectCategory(id) {
+                                    await $wire.addCategory(Number(id));
+                                    this.search = '';
+                                    this.highlightedIndex = -1;
+                                    this.open = true;
+                                    this.$nextTick(() => {
+                                        if (this.$refs.categoryInput) this.$refs.categoryInput.focus();
+                                    });
+                                },
+
+                                async removeCategory(id) {
+                                    await $wire.removeCategory(Number(id));
+                                    this.$nextTick(() => {
+                                        if (this.$refs.categoryInput) this.$refs.categoryInput.focus();
+                                    });
+                                },
+
+                                async createAndSelect(name) {
+                                    const trimmed = (name || '').trim();
+                                    if (!trimmed) return;
+                                    const res = await $wire.createAndAddCategory(trimmed);
+                                    if (res && res.id) {
+                                        if (!this.allCategories.some(c => Number(c.id) === Number(res.id))) {
+                                            this.allCategories.push({ id: Number(res.id), name: res.name });
+                                        }
+                                    }
+                                    this.search = '';
+                                    this.highlightedIndex = -1;
+                                    this.open = true;
+                                    this.$nextTick(() => {
+                                        if (this.$refs.categoryInput) this.$refs.categoryInput.focus();
+                                    });
+                                },
+
+                                handleKeydown(e) {
+                                    const list = this.suggestions;
+                                    if (e.key === 'ArrowDown') {
+                                        e.preventDefault();
+                                        this.open = true;
+                                        if (list.length > 0) {
+                                            this.highlightedIndex = (this.highlightedIndex + 1) % list.length;
+                                        }
+                                    } else if (e.key === 'ArrowUp') {
+                                        e.preventDefault();
+                                        this.open = true;
+                                        if (list.length > 0) {
+                                            this.highlightedIndex = (this.highlightedIndex - 1 + list.length) % list.length;
+                                        }
+                                    } else if (e.key === 'Enter') {
+                                        e.preventDefault();
+                                        if (list.length > 0 && this.highlightedIndex >= 0 && this.highlightedIndex < list.length) {
+                                            this.selectCategory(list[this.highlightedIndex].id);
+                                        } else if (list.length === 1 && this.search.trim() !== '') {
+                                            this.selectCategory(list[0].id);
+                                        } else if (this.search.trim() !== '') {
+                                            this.createAndSelect(this.search.trim());
+                                        }
+                                    } else if (e.key === 'Backspace' && this.search === '') {
+                                        const ids = (Array.isArray($wire.category_ids) ? $wire.category_ids : []);
+                                        if (ids.length > 0) {
+                                            this.removeCategory(ids[ids.length - 1]);
+                                        }
+                                    } else if (e.key === 'Escape') {
+                                        this.open = false;
+                                    }
+                                }
+                            }"
+                        >
                             <label class="block text-xs font-medium text-slate-300">Kategori</label>
 
                             <!-- Outer Box mimicking LinkedIn Skill Input -->
@@ -607,28 +682,29 @@ new #[Layout('layouts.app')] class extends Component
                                 @click="$refs.categoryInput.focus()"
                                 class="w-full bg-[#131B23] border border-[#1D2A37] rounded-xl p-2.5 min-h-[46px] flex flex-wrap items-center gap-1.5 focus-within:border-[#00FF66] focus-within:ring-1 focus-within:ring-[#00FF66] transition cursor-text"
                             >
-                                @foreach ($selectedCategories as $cat)
+                                <template x-for="cat in selectedCategories" :key="cat.id">
                                     <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold bg-[#182330] text-[#00FF66] border border-[#00FF66]/30">
-                                        <span>{{ $cat->name }}</span>
+                                        <span x-text="cat.name"></span>
                                         <button
                                             type="button"
-                                            wire:click.stop="removeCategory({{ $cat->id }})"
+                                            @click.stop="removeCategory(cat.id)"
                                             title="Hapus Kategori"
                                             class="text-slate-400 hover:text-rose-400 font-bold transition cursor-pointer"
                                         >
                                             ✕
                                         </button>
                                     </span>
-                                @endforeach
+                                </template>
 
                                 <input
                                     x-ref="categoryInput"
                                     type="text"
-                                    wire:model.live.debounce.150ms="categorySearch"
+                                    x-model="search"
                                     @focus="open = true"
-                                    @keydown.escape="open = false"
-                                    placeholder="{{ count($category_ids) === 0 ? 'Ketik nama kategori...' : '+ Kategori lain...' }}"
-                                    class="flex-1 min-w-[120px] bg-transparent text-xs text-white placeholder-slate-500 focus:outline-none border-none p-1"
+                                    @keydown="handleKeydown($event)"
+                                    :placeholder="selectedCategories.length === 0 ? 'Ketik nama kategori (cth: Kamera)...' : '+ Tambah kategori lain...'"
+                                    class="flex-1 min-w-[130px] bg-transparent text-xs text-white placeholder-slate-500 focus:outline-none border-none p-1"
+                                    autocomplete="off"
                                 >
                             </div>
 
@@ -645,35 +721,40 @@ new #[Layout('layouts.app')] class extends Component
                                 class="absolute z-30 left-0 right-0 mt-1 bg-[#111720] border border-[#1E2B38] rounded-xl shadow-2xl overflow-hidden max-h-56 overflow-y-auto divide-y divide-[#182330]"
                                 style="display: none;"
                             >
-                                @forelse ($filteredSuggestions as $cat)
+                                <!-- Existing Category Matches -->
+                                <template x-for="(cat, idx) in suggestions" :key="cat.id">
                                     <button
                                         type="button"
-                                        wire:click="addCategory({{ $cat->id }})"
-                                        @click="open = false"
-                                        class="w-full text-left px-3.5 py-2.5 text-xs text-slate-200 hover:bg-[#182330] hover:text-[#00FF66] transition flex items-center justify-between cursor-pointer"
+                                        @click="selectCategory(cat.id)"
+                                        :class="highlightedIndex === idx ? 'bg-[#182330] text-[#00FF66]' : 'text-slate-200 hover:bg-[#182330] hover:text-[#00FF66]'"
+                                        class="w-full text-left px-3.5 py-2.5 text-xs transition flex items-center justify-between cursor-pointer"
                                     >
-                                        <span class="font-medium">{{ $cat->name }}</span>
-                                        <span class="text-[10px] text-slate-500">+ Pilih</span>
+                                        <span class="font-medium" x-text="cat.name"></span>
+                                        <span class="text-[10px] text-slate-500 font-normal">+ Pilih</span>
                                     </button>
-                                @empty
-                                    @if ($categorySearch !== '')
-                                        <div class="p-3 text-xs text-slate-400 space-y-2">
-                                            <p>Kategori "{{ $categorySearch }}" belum ada.</p>
+                                </template>
+
+                                <!-- Empty State / Add New Option -->
+                                <div x-show="suggestions.length === 0" class="p-3 text-xs text-slate-400 space-y-2">
+                                    <template x-if="search.trim() !== ''">
+                                        <div>
+                                            <p>Kategori "<span class="text-white font-medium" x-text="search"></span>" belum terdaftar.</p>
                                             <button
                                                 type="button"
-                                                wire:click="createAndAddCategory('{{ addslashes($categorySearch) }}')"
-                                                @click="open = false"
-                                                class="w-full text-left px-3 py-1.5 rounded-lg text-xs font-semibold bg-[#00FF66]/10 text-[#00FF66] hover:bg-[#00FF66]/20 border border-[#00FF66]/30 transition flex items-center gap-1.5 cursor-pointer"
+                                                @click="createAndSelect(search)"
+                                                class="w-full mt-2 text-left px-3 py-2 rounded-lg text-xs font-semibold bg-[#00FF66]/10 text-[#00FF66] hover:bg-[#00FF66]/20 border border-[#00FF66]/30 transition flex items-center justify-between cursor-pointer"
                                             >
-                                                <span>+ Tambah &amp; Pilih "{{ $categorySearch }}"</span>
+                                                <span>+ Buat &amp; Pilih "<span x-text="search"></span>"</span>
+                                                <span class="text-[10px] uppercase tracking-wider text-slate-400 font-mono">Enter ↵</span>
                                             </button>
                                         </div>
-                                    @else
-                                        <div class="p-3 text-center text-xs text-slate-500">
+                                    </template>
+                                    <template x-if="search.trim() === ''">
+                                        <div class="text-center text-xs text-slate-500 py-1">
                                             Semua kategori sudah dipilih.
                                         </div>
-                                    @endif
-                                @endforelse
+                                    </template>
+                                </div>
                             </div>
                         </div>
 
