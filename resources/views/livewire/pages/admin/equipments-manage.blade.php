@@ -8,9 +8,12 @@ use App\Models\Unit;
 use Illuminate\Validation\Rule;
 use Livewire\Attributes\Layout;
 use Livewire\Volt\Component;
+use Livewire\WithFileUploads;
 
 new #[Layout('layouts.app')] class extends Component
 {
+    use WithFileUploads;
+
     public bool $showForm = false;
     public ?int $selectedUnitId = null;
     public ?int $selectedEquipmentId = null;
@@ -25,6 +28,10 @@ new #[Layout('layouts.app')] class extends Component
     public array $category_ids = [];
     public float $rental_price_per_day = 850000;
     public string $completeness = 'Baterai, charger, hard case';
+
+    // Image fields
+    public $photo = null;
+    public ?string $current_image = null;
 
     // Dynamic custom specifications (saved as JSON into database column deskripsi)
     public array $customSpecs = [];
@@ -44,6 +51,18 @@ new #[Layout('layouts.app')] class extends Component
     {
         unset($this->customSpecs[$index]);
         $this->customSpecs = array_values($this->customSpecs);
+    }
+
+    public function removePhoto(): void
+    {
+        $this->photo = null;
+        $this->current_image = null;
+    }
+
+    public function selectPresetImage(string $preset): void
+    {
+        $this->photo = null;
+        $this->current_image = $preset;
     }
 
     public function mount(): void
@@ -70,6 +89,8 @@ new #[Layout('layouts.app')] class extends Component
             $this->device_type = $eq->device_type->value;
             $this->rental_price_per_day = (float) $eq->rental_price_per_day;
             $this->category_ids = $eq->categories->pluck('id')->toArray();
+            $this->current_image = $eq->image;
+            $this->photo = null;
 
             $specs = $eq->specifications;
             if (! empty($specs)) {
@@ -109,6 +130,8 @@ new #[Layout('layouts.app')] class extends Component
         $this->category_ids = [];
         $this->rental_price_per_day = 500000;
         $this->completeness = 'Unit utama, kabel, baterai';
+        $this->current_image = null;
+        $this->photo = null;
         $this->customSpecs = [
             ['title' => 'Resolusi', 'value' => '1920 × 1080 (Full HD)'],
             ['title' => 'Daya Tahan Baterai', 'value' => '6.0 jam'],
@@ -123,6 +146,7 @@ new #[Layout('layouts.app')] class extends Component
     public function cancel(): void
     {
         $this->showForm = false;
+        $this->photo = null;
         $this->resetValidation();
     }
 
@@ -138,14 +162,26 @@ new #[Layout('layouts.app')] class extends Component
             'rental_price_per_day' => ['required', 'numeric', 'min:0'],
         ];
 
+        if ($this->photo) {
+            $unitRules['photo'] = ['image', 'max:2048'];
+        }
+
         $this->validate($unitRules, [
             'unit_code.required' => 'Kode unit wajib diisi dan harus unik.',
             'unit_code.unique' => 'Kode unit sudah digunakan, harap gunakan kode unik lain.',
             'name.required' => 'Nama alat wajib diisi.',
             'rental_price_per_day.required' => 'Tarif sewa wajib diisi.',
+            'photo.image' => 'File foto harus berupa gambar valid (jpg, jpeg, png, webp).',
+            'photo.max' => 'Ukuran file foto maksimal 2MB.',
         ]);
 
         try {
+            $imagePath = $this->current_image;
+            if ($this->photo) {
+                $storedPath = $this->photo->store('equipments', 'public');
+                $imagePath = 'storage/' . $storedPath;
+            }
+
             $cleanSpecs = [];
             foreach ($this->customSpecs as $item) {
                 $t = trim($item['title'] ?? '');
@@ -159,7 +195,7 @@ new #[Layout('layouts.app')] class extends Component
             }
             $deskripsiJson = json_encode($cleanSpecs, JSON_UNESCAPED_UNICODE);
 
-            // 1. Update or create Equipment with deskripsi JSON column
+            // 1. Update or create Equipment with deskripsi JSON column & image
             if ($this->selectedEquipmentId) {
                 $equipment = Equipment::query()->find($this->selectedEquipmentId);
                 $equipment->update([
@@ -167,6 +203,7 @@ new #[Layout('layouts.app')] class extends Component
                     'device_type' => $this->device_type,
                     'rental_price_per_day' => $this->rental_price_per_day,
                     'deskripsi' => $deskripsiJson,
+                    'image' => $imagePath,
                 ]);
             } else {
                 $equipment = Equipment::query()->create([
@@ -174,6 +211,7 @@ new #[Layout('layouts.app')] class extends Component
                     'device_type' => $this->device_type,
                     'rental_price_per_day' => $this->rental_price_per_day,
                     'deskripsi' => $deskripsiJson,
+                    'image' => $imagePath,
                 ]);
                 $this->selectedEquipmentId = $equipment->id;
             }
@@ -295,6 +333,7 @@ new #[Layout('layouts.app')] class extends Component
                 <table class="w-full text-left border-collapse text-xs">
                     <thead>
                         <tr class="border-b border-[#1A2533] text-[11px] font-semibold text-slate-400 uppercase tracking-wider bg-[#131B24]">
+                            <th class="py-3.5 px-6">Foto</th>
                             <th class="py-3.5 px-6">Kode Unit</th>
                             <th class="py-3.5 px-6">Nama Alat</th>
                             <th class="py-3.5 px-6">Kategori</th>
@@ -306,6 +345,14 @@ new #[Layout('layouts.app')] class extends Component
                     <tbody class="divide-y divide-[#182330]">
                         @forelse ($unitsList as $u)
                             <tr class="hover:bg-[#141B24] transition">
+                                <td class="py-3 px-6">
+                                    @php
+                                        $thumb = $u->equipment?->image ? asset($u->equipment->image) : asset('images/kamera-termal.png');
+                                    @endphp
+                                    <div class="w-10 h-10 rounded-lg bg-[#0E141B] border border-[#1E2B38] overflow-hidden flex items-center justify-center shrink-0">
+                                        <img src="{{ $thumb }}" alt="{{ $u->equipment?->name }}" class="w-full h-full object-cover">
+                                    </div>
+                                </td>
                                 <td class="py-3.5 px-6 font-mono font-bold text-white">{{ $u->unit_code }}</td>
                                 <td class="py-3.5 px-6 font-medium text-slate-200">{{ $u->equipment?->name }}</td>
                                 <td class="py-3.5 px-6 text-slate-400">
@@ -339,7 +386,7 @@ new #[Layout('layouts.app')] class extends Component
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="6" class="py-8 text-center text-slate-500">Belum ada unit fisik terdaftar.</td>
+                                <td colspan="7" class="py-8 text-center text-slate-500">Belum ada unit fisik terdaftar.</td>
                             </tr>
                         @endforelse
                     </tbody>
@@ -378,6 +425,109 @@ new #[Layout('layouts.app')] class extends Component
                 <!-- Left Card: Informasi Unit -->
                 <div class="lg:col-span-6 bg-[#111720] border border-[#1A2533] rounded-2xl p-6 sm:p-7 space-y-5 shadow-2xl">
                     <h2 class="text-base font-bold text-white">Informasi Unit</h2>
+
+                    <!-- Foto Alat -->
+                    <div class="space-y-2">
+                        <label class="block text-xs font-medium text-slate-300">Foto Alat</label>
+                        <div class="p-4 rounded-xl bg-[#0E141B] border border-[#1D2A37] space-y-3">
+                            <div class="flex items-center gap-4">
+                                <!-- Preview Box -->
+                                <div class="relative w-24 h-24 rounded-xl bg-[#131B24] border border-[#1E2B38] overflow-hidden flex items-center justify-center shrink-0 shadow-inner">
+                                    @if ($photo)
+                                        <img src="{{ $photo->temporaryUrl() }}" alt="Preview" class="w-full h-full object-cover">
+                                    @elseif ($current_image)
+                                        <img src="{{ asset($current_image) }}" alt="Foto Alat" class="w-full h-full object-cover">
+                                    @else
+                                        <div class="flex flex-col items-center justify-center text-slate-500 p-2 text-center">
+                                            <svg class="w-7 h-7 text-slate-600 mb-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                            </svg>
+                                            <span class="text-[10px] text-slate-500">Tanpa Foto</span>
+                                        </div>
+                                    @endif
+
+                                    <div wire:loading wire:target="photo" class="absolute inset-0 bg-black/80 flex items-center justify-center">
+                                        <svg class="animate-spin h-5 w-5 text-[#00FF66]" fill="none" viewBox="0 0 24 24">
+                                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                        </svg>
+                                    </div>
+                                </div>
+
+                                <!-- Upload Buttons & Info -->
+                                <div class="flex-1 space-y-2">
+                                    <div class="flex flex-wrap items-center gap-2">
+                                        <label class="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold bg-[#182330] hover:bg-[#202E3F] text-slate-200 border border-[#253648] hover:border-[#00FF66]/50 transition cursor-pointer">
+                                            <svg class="w-4 h-4 text-[#00FF66]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                                            </svg>
+                                            <span>{{ $photo || $current_image ? 'Ganti Foto' : 'Pilih File Foto' }}</span>
+                                            <input type="file" wire:model="photo" accept="image/jpeg,image/png,image/webp" class="hidden">
+                                        </label>
+
+                                        @if ($photo || $current_image)
+                                            <button
+                                                type="button"
+                                                wire:click="removePhoto"
+                                                class="px-3 py-2 rounded-xl text-xs font-semibold bg-rose-950/40 hover:bg-rose-900/60 text-rose-300 border border-rose-800/40 transition cursor-pointer"
+                                            >
+                                                Hapus Foto
+                                            </button>
+                                        @endif
+                                    </div>
+
+                                    <p class="text-[11px] text-slate-400">
+                                        Format: JPG, PNG, atau WebP (maks. 2MB).
+                                    </p>
+                                    @error('photo')
+                                        <p class="text-[11px] text-rose-400 font-medium">{{ $message }}</p>
+                                    @enderror
+                                </div>
+                            </div>
+
+                            <!-- Preset Options Quick Picker -->
+                            <div class="pt-2 border-t border-[#182330]">
+                                <p class="text-[10px] text-slate-400 uppercase tracking-wider font-semibold mb-2">Atau pilih dari foto aset standar:</p>
+                                <div class="flex flex-wrap gap-1.5">
+                                    <button
+                                        type="button"
+                                        wire:click="selectPresetImage('images/kamera-termal.png')"
+                                        class="px-2.5 py-1 rounded-lg text-[11px] font-medium transition cursor-pointer {{ $current_image === 'images/kamera-termal.png' && !$photo ? 'bg-[#00FF66]/20 text-[#00FF66] border border-[#00FF66]/40' : 'bg-[#141B24] text-slate-300 hover:text-white border border-[#223142]' }}"
+                                    >
+                                        Kamera Termal
+                                    </button>
+                                    <button
+                                        type="button"
+                                        wire:click="selectPresetImage('images/night-vision.png')"
+                                        class="px-2.5 py-1 rounded-lg text-[11px] font-medium transition cursor-pointer {{ $current_image === 'images/night-vision.png' && !$photo ? 'bg-[#00FF66]/20 text-[#00FF66] border border-[#00FF66]/40' : 'bg-[#141B24] text-slate-300 hover:text-white border border-[#223142]' }}"
+                                    >
+                                        Night Vision
+                                    </button>
+                                    <button
+                                        type="button"
+                                        wire:click="selectPresetImage('images/emf-meter.png')"
+                                        class="px-2.5 py-1 rounded-lg text-[11px] font-medium transition cursor-pointer {{ $current_image === 'images/emf-meter.png' && !$photo ? 'bg-[#00FF66]/20 text-[#00FF66] border border-[#00FF66]/40' : 'bg-[#141B24] text-slate-300 hover:text-white border border-[#223142]' }}"
+                                    >
+                                        EMF Meter
+                                    </button>
+                                    <button
+                                        type="button"
+                                        wire:click="selectPresetImage('images/evp-recorder.png')"
+                                        class="px-2.5 py-1 rounded-lg text-[11px] font-medium transition cursor-pointer {{ $current_image === 'images/evp-recorder.png' && !$photo ? 'bg-[#00FF66]/20 text-[#00FF66] border border-[#00FF66]/40' : 'bg-[#141B24] text-slate-300 hover:text-white border border-[#223142]' }}"
+                                    >
+                                        EVP Recorder
+                                    </button>
+                                    <button
+                                        type="button"
+                                        wire:click="selectPresetImage('images/sensor-gerak.png')"
+                                        class="px-2.5 py-1 rounded-lg text-[11px] font-medium transition cursor-pointer {{ $current_image === 'images/sensor-gerak.png' && !$photo ? 'bg-[#00FF66]/20 text-[#00FF66] border border-[#00FF66]/40' : 'bg-[#141B24] text-slate-300 hover:text-white border border-[#223142]' }}"
+                                    >
+                                        Sensor Gerak
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
 
                     <!-- Kode Unit -->
                     <div class="space-y-1.5">
