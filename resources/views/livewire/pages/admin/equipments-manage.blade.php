@@ -625,27 +625,22 @@ new #[Layout('layouts.app')] class extends Component
                     </div>
                 </div>
 
-                <!-- Right Card: Spesifikasi Kustom (Tersimpan dalam kolom deskripsi) -->
+                <!-- Right Card: Spesifikasi Produk -->
                 <div class="lg:col-span-6 bg-[#111720] border border-[#1A2533] rounded-2xl p-6 sm:p-7 space-y-5 shadow-2xl flex flex-col justify-between">
                     <div class="space-y-4">
-                        <div class="flex items-center justify-between">
-                            <div>
-                                <h2 class="text-base font-bold text-white flex items-center gap-2">
-                                    <span>Spesifikasi Produk (Kustom)</span>
-                                </h2>
-                                <p class="text-xs text-slate-400 mt-0.5">
-                                    Admin dapat menentukan judul dan isi spesifikasi bebas. Tersimpan ke kolom <span class="text-[#00FF66] font-mono">deskripsi</span>.
-                                </p>
-                            </div>
+                        <div class="flex items-center justify-between gap-4">
+                            <h2 class="text-base font-bold text-white">
+                                Spesifikasi Produk
+                            </h2>
                             <button
                                 type="button"
                                 wire:click="addSpec"
-                                class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-[#00FF66]/10 text-[#00FF66] border border-[#00FF66]/30 hover:bg-[#00FF66]/20 transition cursor-pointer"
+                                class="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-[#00FF66]/10 text-[#00FF66] border border-[#00FF66]/30 hover:bg-[#00FF66]/20 transition cursor-pointer whitespace-nowrap shrink-0"
                             >
-                                <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <svg class="w-3.5 h-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4" />
                                 </svg>
-                                <span>Tambah Spek</span>
+                                <span>+ Tambah Spek</span>
                             </button>
                         </div>
 
