@@ -170,11 +170,11 @@ new #[Layout('layouts.app')] class extends Component
             <!-- Top Avatar & Name -->
             <div class="flex items-center justify-between pb-6 border-b border-[#182330]">
                 <div class="flex items-center gap-5">
-                    <div class="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl bg-[#17222D] border border-[#223344] overflow-hidden flex items-center justify-center p-2 shadow-inner shrink-0">
+                    <div class="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl bg-[#17222D] border border-[#223344] overflow-hidden flex items-center justify-center p-1.5 shadow-inner shrink-0">
                         @if ($avatar)
                             <img src="{{ asset('storage/' . $avatar) }}" alt="Avatar" class="w-full h-full object-cover rounded-xl">
                         @else
-                            <img src="{{ asset('images/logo-icon.png') }}" alt="Avatar" class="w-14 h-14 sm:w-16 sm:h-16 object-contain">
+                            <img src="{{ asset('images/logo-icon.png') }}" alt="Avatar" class="w-full h-full object-contain p-1 drop-shadow">
                         @endif
                     </div>
                     <div>
@@ -247,13 +247,13 @@ new #[Layout('layouts.app')] class extends Component
             <!-- Edit Header -->
             <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-[#182330]">
                 <div class="flex items-center gap-5">
-                    <div class="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl bg-[#17222D] border border-[#223344] overflow-hidden flex items-center justify-center p-2 shadow-inner shrink-0 relative">
+                    <div class="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl bg-[#17222D] border border-[#223344] overflow-hidden flex items-center justify-center p-1.5 shadow-inner shrink-0 relative">
                         @if ($photo)
                             <img src="{{ $photo->temporaryUrl() }}" alt="Preview" class="w-full h-full object-cover rounded-xl">
                         @elseif ($avatar)
                             <img src="{{ asset('storage/' . $avatar) }}" alt="Avatar" class="w-full h-full object-cover rounded-xl">
                         @else
-                            <img src="{{ asset('images/logo-icon.png') }}" alt="Avatar" class="w-14 h-14 sm:w-16 sm:h-16 object-contain">
+                            <img src="{{ asset('images/logo-icon.png') }}" alt="Avatar" class="w-full h-full object-contain p-1 drop-shadow">
                         @endif
                     </div>
                     <div>
