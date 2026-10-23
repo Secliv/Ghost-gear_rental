@@ -26,6 +26,7 @@ new #[Layout('layouts.app')] class extends Component
     public string $name = '';
     public string $device_type = 'thermal_camera';
     public array $category_ids = [];
+    public string $categorySearch = '';
     public float $rental_price_per_day = 850000;
     public string $completeness = 'Baterai, charger, hard case';
 
@@ -51,6 +52,31 @@ new #[Layout('layouts.app')] class extends Component
     {
         unset($this->customSpecs[$index]);
         $this->customSpecs = array_values($this->customSpecs);
+    }
+
+    public function addCategory(int $id): void
+    {
+        if (! in_array($id, $this->category_ids)) {
+            $this->category_ids[] = $id;
+        }
+        $this->categorySearch = '';
+    }
+
+    public function removeCategory(int $id): void
+    {
+        $this->category_ids = array_values(array_filter($this->category_ids, fn ($catId) => (int) $catId !== (int) $id));
+    }
+
+    public function createAndAddCategory(string $name): void
+    {
+        $trimmed = trim($name);
+        if ($trimmed === '') return;
+
+        $cat = Category::query()->firstOrCreate(
+            ['name' => $trimmed],
+            ['description' => 'Kategori peralatan investigasi.']
+        );
+        $this->addCategory($cat->id);
     }
 
     public function removePhoto(): void
@@ -279,9 +305,22 @@ new #[Layout('layouts.app')] class extends Component
 
     public function with(): array
     {
+        $allCategories = Category::query()->orderBy('name')->get();
+        $selectedCategories = $allCategories->whereIn('id', $this->category_ids)->values();
+
+        $filteredSuggestions = $allCategories
+            ->reject(fn ($cat) => in_array($cat->id, $this->category_ids))
+            ->when($this->categorySearch !== '', function ($collection) {
+                $term = strtolower(trim($this->categorySearch));
+                return $collection->filter(fn ($cat) => str_contains(strtolower($cat->name), $term));
+            })
+            ->values();
+
         return [
             'unitsList' => Unit::query()->with('equipment.categories')->get(),
-            'allCategories' => Category::query()->orderBy('name')->get(),
+            'allCategories' => $allCategories,
+            'selectedCategories' => $selectedCategories,
+            'filteredSuggestions' => $filteredSuggestions,
             'deviceTypes' => DeviceType::cases(),
         ];
     }
@@ -559,18 +598,82 @@ new #[Layout('layouts.app')] class extends Component
 
                     <!-- Kategori & Jenis Perangkat -->
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <!-- Kategori Multiple -->
-                        <div class="space-y-1.5">
+                        <!-- Kategori (LinkedIn-style Tag Input with Autocomplete) -->
+                        <div class="space-y-1.5 relative" x-data="{ open: false }">
                             <label class="block text-xs font-medium text-slate-300">Kategori</label>
-                            <div class="bg-[#131B23] border border-[#1D2A37] rounded-xl p-3 space-y-2">
-                                <div class="flex flex-wrap gap-1.5">
-                                    @foreach ($allCategories as $cat)
-                                        <label class="inline-flex items-center gap-1.5 text-[11px] px-2.5 py-1 rounded-md cursor-pointer transition {{ in_array($cat->id, $category_ids) ? 'bg-[#182330] text-emerald-400 border border-emerald-500/30' : 'bg-[#0E141B] text-slate-400 border border-[#1E2B38]' }}">
-                                            <input type="checkbox" wire:model="category_ids" value="{{ $cat->id }}" class="hidden">
-                                            <span>{{ $cat->name }}</span>
-                                        </label>
-                                    @endforeach
-                                </div>
+
+                            <!-- Outer Box mimicking LinkedIn Skill Input -->
+                            <div
+                                @click="$refs.categoryInput.focus()"
+                                class="w-full bg-[#131B23] border border-[#1D2A37] rounded-xl p-2.5 min-h-[46px] flex flex-wrap items-center gap-1.5 focus-within:border-[#00FF66] focus-within:ring-1 focus-within:ring-[#00FF66] transition cursor-text"
+                            >
+                                @foreach ($selectedCategories as $cat)
+                                    <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold bg-[#182330] text-[#00FF66] border border-[#00FF66]/30">
+                                        <span>{{ $cat->name }}</span>
+                                        <button
+                                            type="button"
+                                            wire:click.stop="removeCategory({{ $cat->id }})"
+                                            title="Hapus Kategori"
+                                            class="text-slate-400 hover:text-rose-400 font-bold transition cursor-pointer"
+                                        >
+                                            ✕
+                                        </button>
+                                    </span>
+                                @endforeach
+
+                                <input
+                                    x-ref="categoryInput"
+                                    type="text"
+                                    wire:model.live.debounce.150ms="categorySearch"
+                                    @focus="open = true"
+                                    @keydown.escape="open = false"
+                                    placeholder="{{ count($category_ids) === 0 ? 'Ketik nama kategori...' : '+ Kategori lain...' }}"
+                                    class="flex-1 min-w-[120px] bg-transparent text-xs text-white placeholder-slate-500 focus:outline-none border-none p-1"
+                                >
+                            </div>
+
+                            <!-- Autocomplete Suggestions Dropdown -->
+                            <div
+                                x-show="open"
+                                x-transition:enter="transition ease-out duration-100"
+                                x-transition:enter-start="opacity-0 scale-95"
+                                x-transition:enter-end="opacity-100 scale-100"
+                                x-transition:leave="transition ease-in duration-75"
+                                x-transition:leave-start="opacity-100 scale-100"
+                                x-transition:leave-end="opacity-0 scale-95"
+                                @click.outside="open = false"
+                                class="absolute z-30 left-0 right-0 mt-1 bg-[#111720] border border-[#1E2B38] rounded-xl shadow-2xl overflow-hidden max-h-56 overflow-y-auto divide-y divide-[#182330]"
+                                style="display: none;"
+                            >
+                                @forelse ($filteredSuggestions as $cat)
+                                    <button
+                                        type="button"
+                                        wire:click="addCategory({{ $cat->id }})"
+                                        @click="open = false"
+                                        class="w-full text-left px-3.5 py-2.5 text-xs text-slate-200 hover:bg-[#182330] hover:text-[#00FF66] transition flex items-center justify-between cursor-pointer"
+                                    >
+                                        <span class="font-medium">{{ $cat->name }}</span>
+                                        <span class="text-[10px] text-slate-500">+ Pilih</span>
+                                    </button>
+                                @empty
+                                    @if ($categorySearch !== '')
+                                        <div class="p-3 text-xs text-slate-400 space-y-2">
+                                            <p>Kategori "{{ $categorySearch }}" belum ada.</p>
+                                            <button
+                                                type="button"
+                                                wire:click="createAndAddCategory('{{ addslashes($categorySearch) }}')"
+                                                @click="open = false"
+                                                class="w-full text-left px-3 py-1.5 rounded-lg text-xs font-semibold bg-[#00FF66]/10 text-[#00FF66] hover:bg-[#00FF66]/20 border border-[#00FF66]/30 transition flex items-center gap-1.5 cursor-pointer"
+                                            >
+                                                <span>+ Tambah &amp; Pilih "{{ $categorySearch }}"</span>
+                                            </button>
+                                        </div>
+                                    @else
+                                        <div class="p-3 text-center text-xs text-slate-500">
+                                            Semua kategori sudah dipilih.
+                                        </div>
+                                    @endif
+                                @endforelse
                             </div>
                         </div>
 
