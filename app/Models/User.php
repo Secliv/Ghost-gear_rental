@@ -4,9 +4,6 @@ namespace App\Models;
 
 use App\Enums\LoanStatus;
 use App\Enums\UserRole;
-use Filament\Models\Contracts\FilamentUser;
-use Filament\Models\Contracts\HasName;
-use Filament\Panel;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
@@ -14,7 +11,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
-class User extends Authenticatable implements FilamentUser, HasName
+class User extends Authenticatable
 {
     use HasFactory, Notifiable, SoftDeletes;
 
@@ -53,22 +50,6 @@ class User extends Authenticatable implements FilamentUser, HasName
             'is_active' => 'boolean',
             'password' => 'hashed',
         ];
-    }
-
-    /**
-     * Determine if the user can access the given Filament panel.
-     */
-    public function canAccessPanel(Panel $panel): bool
-    {
-        return $this->role === UserRole::Admin && $this->is_active;
-    }
-
-    /**
-     * Display name for Filament.
-     */
-    public function getFilamentName(): string
-    {
-        return $this->profile?->full_name ?? $this->username;
     }
 
     /**
